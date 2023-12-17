@@ -30,7 +30,7 @@ void Settings::Load() {
         picojson::value v;
         std::string err = picojson::parse(v, json);
         if (!err.empty()) {
-            Error("Error on parsing json: %hs\n", err.c_str());
+            Error("Error on parsing session config (%s): %hs\n", g_sessionPath, err.c_str());
             return;
         }
 
@@ -108,16 +108,18 @@ void Settings::Load() {
         m_overrideGripThreshold = config.get("override_grip_threshold").get<bool>();
         m_gripThreshold = config.get("grip_threshold").get<double>();
 
-        m_constantBitrate = v.get("session_settings")
-                             .get("video")
-                             .get("bitrate")
-                             .get("mode")
-                             .get("variant").get<std::string>() == "ConstantMbps";
+        auto sessionSettings = v.get("session_settings");
+        auto sessionVideo = sessionSettings.get("video");
+
+        m_constantBitrate = sessionVideo.get("bitrate")
+                                        .get("mode")
+                                        .get("variant").get<std::string>() == "ConstantMbps";
+        m_h264UseBaselineProfile = sessionVideo.get("h264_use_baseline_profile").get<bool>();
 
         Info("Render Target: %d %d\n", m_renderWidth, m_renderHeight);
         Info("Refresh Rate: %d\n", m_refreshRate);
         m_loaded = true;
     } catch (std::exception &e) {
-        Error("Exception on parsing json: %hs\n", e.what());
+        Error("Exception on parsing session config (%s): %hs\n", g_sessionPath, e.what());
     }
 }
